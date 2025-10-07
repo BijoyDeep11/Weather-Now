@@ -13,26 +13,39 @@ const pPrecipitation = document.querySelector("#pPrecipitation");
 let cityName, countryName, weatherData;
 
 async function getGeoData() {
-  let search = txtSearch.value;
-
-  const url = `https://nominatim.openstreetmap.org/search?q=${search}&format=jsonv2&addressdetails=1`;
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Response status: ${response.status}`);
+    let search = txtSearch.value;
+    if (!search) {
+        alert("Please enter a location to search.");
+        return;
     }
 
-    const result = await response.json();
-    //console.log(result);
+    const url = `https://nominatim.openstreetmap.org/search?q=${search}&format=jsonv2&addressdetails=1`;
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Response status: ${response.status}`);
+        }
+        const result = await response.json();
+        if (result.length === 0) {
+            alert("Location not found. Please try again.");
+            return;
+        }
 
-    let lat = result[0].lat;
-    let lon = result[0].lon;
+        const lat = result[0].lat;
+        const lon = result[0].lon;
+        
+        // --- This is the part that fixes the error ---
+        // It pulls the text for the city and country out of the result object.
+        const city = result[0].address.city || result[0].address.town || result[0].address.village;
+        const country = result[0].address.country_code.toUpperCase();
 
-    loadLocationData(result);
-    getWeatherData(lat, lon);
-  } catch (error) {
-    console.error(error.message);
-  }
+        // Now it correctly calls the functions with simple text
+        loadLocationData(city, country);
+        getWeatherData(lat, lon);
+
+    } catch (error) {
+        console.error(error.message);
+    }
 }
 
 // Function to get user's location on page load
@@ -298,4 +311,3 @@ btnSearch.addEventListener("click", getGeoData);
 ddlUnits.addEventListener("change", getGeoData);
 ddlDay.addEventListener("change", loadHourlyForecast);
 txtSearch.addEventListener("keydown", handleSearchEnter);
-
