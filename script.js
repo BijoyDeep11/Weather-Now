@@ -35,29 +35,60 @@ async function getGeoData() {
   }
 }
 
-function loadLocationData(locationData) {
-  let location = locationData[0].address;
-  cityName = location.city;
-  cityName = location.city || location.town || location.village || location.county;
-  countryName = location.country_code.toUpperCase();
+// Function to get user's location on page load
+function getUserLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                getWeatherData(lat, lon);
+                reverseGeocode(lat, lon);
+            },
+            (error) => {
+                // If user denies, default to a search for "London"
+                console.error("Geolocation error:", error.message);
+                txtSearch.value = "London";
+                getGeoData();
+            }
+        );
+    } else {
+        // If browser doesn't support, default to London
+        console.error("Geolocation is not supported by this browser.");
+        txtSearch.value = "London";
+        getGeoData();
+    }
+}
 
-  if (!cityName) {
-    cityName = "Unknown Location";
-  }
+// Function to get city name from coordinates
+async function reverseGeocode(lat, lon) {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Response status: ${response.status}`);
+        }
+        const result = await response.json();
+        const city = result.address.city || result.address.town || result.address.village;
+        const country = result.address.country_code.toUpperCase();
+        loadLocationData(city, country); // Uses the modified function below
+    } catch (error) {
+        console.error(error.message);
+        dvCityCountry.textContent = "Location not found";
+    }
+}
 
-  let dateOptions = {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    weekday: "long",
-  };
+function loadLocationData(city, country) {
+    let dateOptions = {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        weekday: "long",
+    };
+    let currDate = new Intl.DateTimeFormat("en-US", dateOptions).format(new Date());
 
-  let currDate = new Intl.DateTimeFormat("en-US", dateOptions).format(new Date());
-
-  //console.log(cityName, countryName, date);
-
-  dvCityCountry.textContent = `${cityName}, ${countryName}`;
-  dvCurrDate.textContent = currDate;
+    dvCityCountry.textContent = `${city}, ${country}`;
+    dvCurrDate.textContent = currDate;
 }
 
 async function getWeatherData(lat, lon) {
@@ -252,16 +283,19 @@ function populateDayOfWeek() {
   console.log(ddlDay);
 }
 
-populateDayOfWeek();
-getGeoData();
-
 function handleSearchEnter(e){
   if (e.keyCode === 13 || e.key === 'Enter'){
     e.preventDefault();
     getGeoData();
   }
 }
+
+populateDayOfWeek();
+getGeoData();
+getUserLocation();
+
 btnSearch.addEventListener("click", getGeoData);
 ddlUnits.addEventListener("change", getGeoData);
 ddlDay.addEventListener("change", loadHourlyForecast);
 txtSearch.addEventListener("keydown", handleSearchEnter);
+
