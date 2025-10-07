@@ -9,6 +9,7 @@ const pFeelsLike = document.querySelector("#pFeelsLike");
 const pHumidity = document.querySelector("#pHumidity");
 const pWind = document.querySelector("#pWind");
 const pPrecipitation = document.querySelector("#pPrecipitation");
+const imgCurrIcon = document.querySelector(".current__icon");
 
 let cityName, countryName, weatherData;
 
@@ -136,6 +137,11 @@ async function getWeatherData(lat, lon) {
 }
 
 function loadCurrentWeather() {
+    const weatherCode = weatherData.current.weather_code;
+    const weatherCodeName = getWeatherCodeName(weatherCode); // Use existing helper function
+    
+    imgCurrIcon.src = `assets/images/icon-${weatherCodeName}.webp`;
+    imgCurrIcon.alt = `Icon showing ${weatherCodeName}`; 
   dvCurrTemp.textContent = Math.round(weatherData.current.temperature_2m);
   pFeelsLike.textContent = Math.round(weatherData.current.apparent_temperature);
   pHumidity.textContent = weatherData.current.relative_humidity_2m;
